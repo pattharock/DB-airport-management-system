@@ -1,0 +1,95 @@
+-- I.	Finding out the number of aircraft types, capable of landing on a particular airport.
+SELECT C.AIRPORT_CODE, A.AIRPORT_NAME, COUNT(AIRPLANE_TYPE) AS CAN_LAND_ON_AIRPORT
+FROM CAN_LAND C 
+JOIN AIRPORT A 
+ON A.AIRPORT_CODE = C.AIRPORT_CODE
+GROUP BY AIRPORT_CODE;
+
+-- II. 	Finding out the aircrafts, which have greater than 200 seats(i.e. Jumbo Jets).
+SELECT * 
+FROM AIRPLANE_TYPE A
+WHERE A.MAX_SEATS >= 200; 
+
+-- III.	Listing the Reservations for all Direct Flights (i.e. Unlegged Flights)
+SELECT *
+FROM RESERVATION R
+WHERE R.FLIGHT_ID NOT IN (
+	SELECT F.FLIGHT_ID
+    FROM FLIGHT_LEG F
+);
+
+
+-- IV.	Printing of Pre-departure list of passengers for each flight.
+SELECT R.FLIGHT_ID, C.CUSTOMER_NAME
+FROM RESERVATION R
+JOIN CUSTOMER C
+ON R.CUSTOMER_ID = C.CUSTOMER_ID;
+
+-- V.	Listing the Total Number of Delayed Flights (i.e. flights for which actual departure time is after the scheduled departure time, 
+--      or actual arrival time is after the scheduled arrival time, or both.)
+
+SELECT COUNT(*) AS TOTAL_DELAYED 
+FROM LEG_INSTANCE L, FLIGHT_LEG FL
+WHERE L.LEG_ID = FL.LEG_ID AND L.FLIGHT_ID = FL.FLIGHT_ID AND (	
+	L.DEPARTURE_TIME > FL.SHEDULED_DEPARTURE_TIME OR 
+	L.ARRIVAL_TIME > FL.SHEDULED_ARRIVAL_TIME OR (
+			L.DEPARTURE_TIME > FL.SHEDULED_DEPARTURE_TIME AND
+            L.ARRIVAL_TIME > FL.SHEDULED_ARRIVAL_TIME
+            )
+	);
+    
+-- VI.	Listing out the Passengers eligible for the Frequent Flyers Rewards Programme (i.e. Top 5 Customers with highest accumulated miles).
+SELECT *
+FROM CUSTOMER C
+ORDER BY C.ACCUMULATED_KM DESC
+LIMIT 5;
+
+-- VII.		Listing out the Busiest Ports of 2020
+-- Busiest departure ports
+SELECT  A.AIRPORT_NAME, COUNT(A.AIRPORT_NAME) AS B
+FROM AIRPORT A, FLIGHT_LEG FL, LEG_INSTANCE L
+WHERE L.LEG_ID = FL.LEG_ID AND 
+	  L.FLIGHT_ID = FL.FLIGHT_ID AND 
+	  FL.DEPARTURE_AIRPORT_CODE = A.AIRPORT_CODE
+GROUP BY A.AIRPORT_NAME
+ORDER BY B DESC;
+
+-- busiest arrival ports
+SELECT  A.AIRPORT_NAME, COUNT(A.AIRPORT_NAME) AS B
+FROM AIRPORT A, FLIGHT_LEG FL, LEG_INSTANCE L
+WHERE L.LEG_ID = FL.LEG_ID AND 
+	  L.FLIGHT_ID = FL.FLIGHT_ID AND
+      FL.ARRIVAL_AIRPORT_CODE = A.AIRPORT_CODE
+GROUP BY A.AIRPORT_NAME
+ORDER BY B DESC;
+
+-- VIII.		Listing out the Overall Busiest Port of 2020
+SELECT T.AIRPORT_NAME, SUM(T.B) AS TOTALS
+FROM (
+		(
+			SELECT  A.AIRPORT_NAME, COUNT(A.AIRPORT_NAME) AS B
+			FROM AIRPORT A, FLIGHT_LEG FL, LEG_INSTANCE L
+			WHERE L.LEG_ID = FL.LEG_ID AND 
+			L.FLIGHT_ID = FL.FLIGHT_ID AND 
+			FL.DEPARTURE_AIRPORT_CODE = A.AIRPORT_CODE
+			GROUP BY A.AIRPORT_NAME
+		) 
+		UNION ALL
+		(
+			SELECT  A.AIRPORT_NAME, COUNT(A.AIRPORT_NAME) AS B
+			FROM AIRPORT A, FLIGHT_LEG FL, LEG_INSTANCE L
+			WHERE L.LEG_ID = FL.LEG_ID AND 
+			L.FLIGHT_ID = FL.FLIGHT_ID AND
+			FL.ARRIVAL_AIRPORT_CODE = A.AIRPORT_CODE
+			GROUP BY A.AIRPORT_NAME
+		)
+	) T
+GROUP BY T.AIRPORT_NAME
+ORDER BY TOTALS DESC;
+
+ 
+
+
+
+
+
